@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>PubSub Test</title>
+    <meta charset="utf-8" />
+    <script src="http://ajax.googleapis.com/ajax/libs/prototype/1.6.1.0/prototype.js"></script>
+    <script src="client/pubsub_client.js"></script>
+    <script>
+      var client = new PubSubClient("127.0.0.1", "8081");
+      
+      client.onconnect = function() {
+        this.subscribe("test", function(message) {
+          console.log(message);
+        });
+      };
+    </script>
+  </head>
+  <body>
+    <p id="output"></p>
+  </body>
+</html>
