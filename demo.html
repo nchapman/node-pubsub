@@ -6,13 +6,18 @@
     <script src="http://ajax.googleapis.com/ajax/libs/prototype/1.6.1.0/prototype.js"></script>
     <script src="client/pubsub_client.js"></script>
     <script>
-      var client = new PubSubClient("127.0.0.1", "8081");
+      function logger(message) {
+        console.log(message);
+      }
       
-      client.onconnect = function() {
-        this.subscribe("test", function(message) {
-          console.log(message);
-        });
-      };
+      for (var i = 0; i < 200; i++) {
+        var client = new PubSubClient("127.0.0.1", "8081");
+      
+        client.onconnect = function() {
+          for (var j = 0; j < 100; j++)
+            this.subscribe("test:" + j, logger);
+        };
+      }
     </script>
   </head>
   <body>

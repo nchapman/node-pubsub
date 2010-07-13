@@ -75,7 +75,7 @@ var PubSubClient = Class.create({
       this[command].apply(this, arguments);
   },
   
-  deliverMessage: function(channel, message) {
+  deliver: function(channel, message) {
     var functions = this.channels[channel];
     
     if (functions)
@@ -85,7 +85,7 @@ var PubSubClient = Class.create({
   
   ping: function() {
     if (this.socket)
-      this.triggerRemote("ping");
+      this.rpc("ping");
   },
   
   subscribe: function(channel, f) {
@@ -94,14 +94,14 @@ var PubSubClient = Class.create({
     else
       this.channels[channel] = [f];
       
-    this.triggerRemote("subscribe", channel);
+    this.rpc("subscribe", channel);
   },
   
   publish: function(channel, message) {
-    this.triggerRemote("publish", channel, message);
+    this.rpc("publish", channel, message);
   },
   
-  triggerRemote: function(command) {
+  rpc: function(command) {
     this.socket.send(Object.toJSON(Array.prototype.slice.call(arguments)));
   }
 });
