@@ -20,10 +20,14 @@ var PubSubClient = Class.create({
     this.socket.onopen = this.wsonconnect.bind(this);
     this.socket.onmessage = this.wsonmessage.bind(this);
     this.socket.onclose = this.wsondisconnect.bind(this);
-    //this.socket.onerror = this.errored.bind(this);
+    this.socket.onerror = this.wsonerror.bind(this);
+    
+    console.log("connect -> connecting");
   },
   
   wsonconnect: function() {
+    console.log("wsonconnect -> connected");
+    
     this.connected = true;
     this.connecting = false;
     this.reconnectAttempts = 0;
@@ -32,12 +36,10 @@ var PubSubClient = Class.create({
     
     if (this.onconnect)
       this.onconnect();
-    
-    console.log("wsonconnect: connected")
   },
   
   wsondisconnect: function() {
-    console.log("not connected " + (!this.expectedClose ? " (unexpected)" : ""));
+    console.log("wsondisconnect -> not connected " + (!this.expectedClose ? " (unexpected)" : ""));
 
     if (this.heartbeat)
       clearInterval(this.heartbeat);
@@ -56,7 +58,7 @@ var PubSubClient = Class.create({
     if (!this.expectedClose && ++this.reconnectAttempts < this.maxReconnectAttempts) {
       var timeout = Math.pow(2, this.reconnectAttempts) * 1000;  // exponential backoff
       
-      console.log("trying to reconnect in " + timeout + " ms ...");
+      console.log("wsondisconnect -> trying to reconnect in " + timeout + " ms ...");
       
       setTimeout(function () {
         if (this.onreconnectattempt) 
@@ -71,8 +73,14 @@ var PubSubClient = Class.create({
     var arguments = e.data.evalJSON();
     var command = arguments.shift();
     
+    console.log("wsonmessage -> " + command);
+    
     if (this[command])
       this[command].apply(this, arguments);
+  },
+  
+  wsonerror: function(e) {
+    console.error(e);
   },
   
   deliver: function(channel, message) {
@@ -81,14 +89,21 @@ var PubSubClient = Class.create({
     if (functions)
       for (var i = 0; i < functions.length; i++)
         functions[i](message);
+        
+    console.log("deliver -> " + channel + " -> " + Object.toJSON(message));
   },
   
   ping: function() {
-    if (this.socket)
+    if (this.connected)
       this.rpc("ping");
   },
   
   subscribe: function(channel, f) {
+    if (channel.indexOf("*") >= 0) {
+      console.warn("subscribe -> rejected -> " + channel);
+      return;
+    }
+    
     if (this.channels[channel])
       this.channels[channel].push(f);
     else
@@ -102,6 +117,10 @@ var PubSubClient = Class.create({
   },
   
   rpc: function(command) {
-    this.socket.send(Object.toJSON(Array.prototype.slice.call(arguments)));
+    var json = Object.toJSON(Array.prototype.slice.call(arguments));
+    
+    this.socket.send(json);
+    
+    console.log("rpc -> " + json);
   }
 });

@@ -11,7 +11,7 @@ var PubSub = {
   addClient: function(client) {
     clients.push(client);
     
-    sys.log("addClient: " + clients.length + " clients connected");
+    sys.log("addClient -> " + clients.length + " clients connected");
   },
 
   removeClient: function(client) {
@@ -20,20 +20,30 @@ var PubSub = {
     for (channel in channels)
       PubSub.unsubscribe(client, channel);
     
-    sys.log("removeClient: " + clients.length + " clients connected");
+    sys.log("removeClient -> " + clients.length + " clients connected");
   },
 
   subscribe: function(client, channel) {
-    if (channels[channel])
-      channels[channel].push(client);
-    else {
-      channels[channel] = [client];
+    if (channel.indexOf("*") >= 0) {
+      sys.log("subscribe -> rejected  -> " + channel);
+      return;
+    }
+    
+    var clients = channels[channel];
+    
+    if (clients == undefined)
+      clients = [];
+
+    if (clients.length == 0) {
       subscriber.subscribeTo(channel, this.deliver);
       
-      sys.log("subscribe: redis: " + channel);
+      sys.log("subscribe -> redis -> " + channel);
     }
+    
+    clients.push(client);
+    channels[channel] = clients;
 
-    sys.log("subscribe: " + channel);
+    sys.log("subscribe -> " + channel);
   },
 
   unsubscribe: function(client, channel) {
@@ -45,13 +55,14 @@ var PubSub = {
       if (index >= 0) {
         clients.splice(index, 1);
         
-        sys.log("unsubscribe: " + channel);
+        sys.log("unsubscribe -> " + channel);
       }
       
       if (clients.length == 0) {
         subscriber.unsubscribeFrom(channel);
+        delete channels[channel];
         
-        sys.log("unsubscribe: redis: " + channel);
+        sys.log("unsubscribe -> redis -> " + channel);
       }
     }
   },
@@ -62,7 +73,7 @@ var PubSub = {
         sys.debug(error);
     });
     
-    sys.log("publish: " + channel + ": " + JSON.stringify(message));
+    sys.log("publish -> " + channel + " -> " + JSON.stringify(message));
   },
   
   ping: function(client) {
@@ -74,6 +85,8 @@ var PubSub = {
 
     for (var i = 0; i < clients.length; i++)
       PubSub.rpc(clients[i], "deliver", channel.toString(), JSON.parse(message.toString()));
+      
+    sys.log("deliver -> " + channel + " -> " + message.toString());
   },
   
   rpc: function(client, command) {
@@ -82,15 +95,15 @@ var PubSub = {
     
     client.write(JSON.stringify(args));
     
-    sys.log("rpc: " + JSON.stringify(args));
+    sys.log("rpc -> " + JSON.stringify(args));
   }
 };
 
 ws.createServer(function(client) {
   client.addListener("connect", function(resource) {
-    PubSub.addClient(this);
-    
     sys.log("connect");
+    
+    PubSub.addClient(this);
   });
   
   client.addListener("data", function(json) {
@@ -103,7 +116,7 @@ ws.createServer(function(client) {
     if (PubSub[command])
       PubSub[command].apply(PubSub, args);
     else
-      sys.log("Command not found: " + command);
+      sys.log("data: Command not found -> " + command);
   });
   
   client.addListener("close", function() {
@@ -113,6 +126,6 @@ ws.createServer(function(client) {
   });
   
   client.addListener("error", function(exception) { 
-    sys.error(exception);
+    sys.log(exception);
   });
 }).listen(8081);

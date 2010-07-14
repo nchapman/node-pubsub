@@ -10,14 +10,12 @@
         console.log(message);
       }
       
-      for (var i = 0; i < 200; i++) {
-        var client = new PubSubClient("127.0.0.1", "8081");
-      
-        client.onconnect = function() {
-          for (var j = 0; j < 100; j++)
-            this.subscribe("test:" + j, logger);
-        };
-      }
+      var client = new PubSubClient("127.0.0.1", "8081");
+    
+      client.onconnect = function() {
+        for (var j = 0; j < 10; j++)
+          this.subscribe("test:" + j, logger);
+      };
     </script>
   </head>
   <body>
