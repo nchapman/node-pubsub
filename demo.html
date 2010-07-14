@@ -10,7 +10,7 @@
         console.log(message);
       }
       
-      var client = new PubSubClient("127.0.0.1", "8081");
+      var client = new PubsubClient("127.0.0.1", "8081");
     
       client.onconnect = function() {
         for (var j = 0; j < 10; j++)

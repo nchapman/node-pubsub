@@ -1,4 +1,4 @@
-var PubSubClient = Class.create({
+var PubsubClient = Class.create({
   connected: false,
   channels: {},
   reconnectAttempts: 0,
@@ -22,11 +22,11 @@ var PubSubClient = Class.create({
     this.socket.onclose = this.wsondisconnect.bind(this);
     this.socket.onerror = this.wsonerror.bind(this);
     
-    console.log("connect -> connecting");
+    this.log("connect -> connecting");
   },
   
   wsonconnect: function() {
-    console.log("wsonconnect -> connected");
+    this.log("wsonconnect -> connected");
     
     this.connected = true;
     this.connecting = false;
@@ -39,7 +39,7 @@ var PubSubClient = Class.create({
   },
   
   wsondisconnect: function() {
-    console.log("wsondisconnect -> not connected " + (!this.expectedClose ? " (unexpected)" : ""));
+    this.log("wsondisconnect -> not connected " + (!this.expectedClose ? " (unexpected)" : ""));
 
     if (this.heartbeat)
       clearInterval(this.heartbeat);
@@ -58,7 +58,7 @@ var PubSubClient = Class.create({
     if (!this.expectedClose && ++this.reconnectAttempts < this.maxReconnectAttempts) {
       var timeout = Math.pow(2, this.reconnectAttempts) * 1000;  // exponential backoff
       
-      console.log("wsondisconnect -> trying to reconnect in " + timeout + " ms ...");
+      this.log("wsondisconnect -> trying to reconnect in " + timeout + " ms ...");
       
       setTimeout(function () {
         if (this.onreconnectattempt) 
@@ -70,13 +70,13 @@ var PubSubClient = Class.create({
   },
   
   wsonmessage: function(e) {
-    var arguments = e.data.evalJSON();
-    var command = arguments.shift();
+    var args = e.data.evalJSON();
+    var command = args.shift();
     
-    console.log("wsonmessage -> " + command);
+    this.log("wsonmessage -> " + command);
     
     if (this[command])
-      this[command].apply(this, arguments);
+      this[command].apply(this, args);
   },
   
   wsonerror: function(e) {
@@ -85,12 +85,13 @@ var PubSubClient = Class.create({
   
   deliver: function(channel, message) {
     var functions = this.channels[channel];
+    var evaledMessage = message.evalJSON();
     
     if (functions)
       for (var i = 0; i < functions.length; i++)
-        functions[i](message);
+        functions[i](evaledMessage);
         
-    console.log("deliver -> " + channel + " -> " + Object.toJSON(message));
+    this.log("deliver -> " + channel + " -> " + Object.toJSON(message));
   },
   
   ping: function() {
@@ -121,6 +122,11 @@ var PubSubClient = Class.create({
     
     this.socket.send(json);
     
-    console.log("rpc -> " + json);
+    this.log("rpc -> " + json);
+  },
+  
+  log: function(message) {
+    if (this.logger)
+      this.logger(message);
   }
 });
