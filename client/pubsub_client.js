@@ -85,11 +85,10 @@ var PubsubClient = Class.create({
   
   deliver: function(channel, message) {
     var functions = this.channels[channel];
-    var evaledMessage = message.evalJSON();
     
     if (functions)
       for (var i = 0; i < functions.length; i++)
-        functions[i](evaledMessage);
+        functions[i](message);
         
     this.log("deliver -> " + channel + " -> " + Object.toJSON(message));
   },
